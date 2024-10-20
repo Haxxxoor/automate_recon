@@ -5,6 +5,16 @@ import sublist3r
 import requests
 import json
 from subprocess import Popen, PIPE
+import shodan
+from censys.search import CensysHosts
+from censys.common.exceptions import CensysException
+from virus_total_apis import PublicApi as VirusTotalPublicApi
+
+# API keys
+SHODAN_API_KEY = 'your_shodan_api_key'
+VIRUSTOTAL_API_KEY = 'your_virustotal_api_key'
+CENSYS_API_ID = 'your_censys_api_id'
+CENSYS_API_SECRET = 'your_censys_api_secret'
 
 # Function to perform WHOIS Lookup
 def whois_lookup(domain):
@@ -41,7 +51,7 @@ def detect_web_technologies(domain):
     except Exception as e:
         return f"Web technology detection failed: {str(e)}"
 
-# Function to perform OSINT using TheHarvester (using the subprocess to call theHarvester)
+# Function to perform OSINT using TheHarvester (using subprocess to call theHarvester)
 def osint_gathering(domain):
     print(f"[*] Gathering OSINT data for {domain} using theHarvester")
     try:
@@ -53,6 +63,36 @@ def osint_gathering(domain):
             return error.decode('utf-8').strip()
     except Exception as e:
         return f"OSINT gathering failed: {str(e)}"
+
+# Shodan IoT Device Reconnaissance
+def shodan_scan(target):
+    print(f"[*] Scanning for IoT devices with Shodan for {target}")
+    try:
+        api = shodan.Shodan(SHODAN_API_KEY)
+        host = api.host(target)
+        return json.dumps(host, indent=4)
+    except Exception as e:
+        return f"Shodan scan failed: {str(e)}"
+
+# VirusTotal domain analysis
+def virustotal_scan(domain):
+    print(f"[*] Performing VirusTotal domain analysis for {domain}")
+    try:
+        vt = VirusTotalPublicApi(VIRUSTOTAL_API_KEY)
+        response = vt.get_domain_report(domain)
+        return json.dumps(response['results'], indent=4)
+    except Exception as e:
+        return f"VirusTotal scan failed: {str(e)}"
+
+# Censys for discovering services and certificates
+def censys_scan(target):
+    print(f"[*] Performing Censys scan for {target}")
+    try:
+        c = CensysHosts(api_id=CENSYS_API_ID, api_secret=CENSYS_API_SECRET)
+        search_results = c.search(target)
+        return json.dumps(search_results, indent=4)
+    except CensysException as e:
+        return f"Censys scan failed: {str(e)}"
 
 # Function to save the results to a file
 def save_results(filename, content):
@@ -92,11 +132,23 @@ def perform_recon(domain):
     osint_results = osint_gathering(domain)
     results += f"\n### OSINT Results ###\n{osint_results}\n"
 
+    # 6. Shodan IoT Device Reconnaissance
+    shodan_results = shodan_scan(domain)
+    results += f"\n### Shodan IoT Device Scan ###\n{shodan_results}\n"
+
+    # 7. VirusTotal Domain Analysis
+    vt_results = virustotal_scan(domain)
+    results += f"\n### VirusTotal Scan ###\n{vt_results}\n"
+
+    # 8. Censys for Services and Certificates
+    censys_results = censys_scan(domain)
+    results += f"\n### Censys Scan ###\n{censys_results}\n"
+
     # Save to file
     save_results(f"{domain}_recon_results.txt", results)
     print(f"[*] Reconnaissance complete. Results saved to {domain}_recon_results.txt")
 
 # Run the script
 if __name__ == "__main__":
-    target_domain = input("Enter the target domain: ")
+    target_domain = input("Enter the target domain or IP: ")
     perform_recon(target_domain)
