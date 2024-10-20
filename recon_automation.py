@@ -4,17 +4,32 @@ import whois
 import sublist3r
 import requests
 import json
+import random
 from subprocess import Popen, PIPE
 import shodan
 from censys.search import CensysHosts
 from censys.common.exceptions import CensysException
 from virus_total_apis import PublicApi as VirusTotalPublicApi
+from termcolor import colored  # For colored banner text
 
 # API keys
 SHODAN_API_KEY = 'your_shodan_api_key'
 VIRUSTOTAL_API_KEY = 'your_virustotal_api_key'
 CENSYS_API_ID = 'your_censys_api_id'
 CENSYS_API_SECRET = 'your_censys_api_secret'
+
+# Function to display a banner with changing colors
+def display_banner():
+    banner_text = """
+    ==========================================
+    |      Automated Reconnaissance Tool      |
+    |                By Haxxxoor              |
+    ==========================================
+    """
+    
+    colors = ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+    selected_color = random.choice(colors)  # Randomly select a color
+    print(colored(banner_text, selected_color))
 
 # Function to perform WHOIS Lookup
 def whois_lookup(domain):
@@ -150,5 +165,11 @@ def perform_recon(domain):
 
 # Run the script
 if __name__ == "__main__":
+    # Display the color-changing banner
+    display_banner()
+
+    # Get the target from user input
     target_domain = input("Enter the target domain or IP: ")
+    
+    # Perform the recon process
     perform_recon(target_domain)
